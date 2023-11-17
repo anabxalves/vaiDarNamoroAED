@@ -29,6 +29,7 @@
 
 /* Begin PBXFileReference section */
 		7C1DC4342B07D4BF004DDBB5 /* dB */ = {isa = PBXFileReference; lastKnownFileType = folder; path = dB; sourceTree = "<group>"; };
+		7C1DC4352B07D885004DDBB5 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		7C33F3332B02618000958162 /* vdnAed */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = vdnAed; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C33F3362B02618000958162 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		7C33F33E2B02620B00958162 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
@@ -58,6 +59,7 @@
 		7C33F32A2B02618000958162 = {
 			isa = PBXGroup;
 			children = (
+				7C1DC4352B07D885004DDBB5 /* README.md */,
 				7C33F3352B02618000958162 /* vdnAed */,
 				7C33F3342B02618000958162 /* Products */,
 				7C33F33D2B02620B00958162 /* Frameworks */,
