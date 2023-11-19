@@ -2,8 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "raylib.h"
+#define STORAGE_DATA_FILE   "storage.data"   // arq Highscore
+#define MAX_INPUT_CHARS     9
+#define NUM_FRAMES  3   // tamanho botão
 
-typedef enum GameScreen { LOGO = 0, TITLE, GAMEPLAY, ENDING } GameScreen;
+typedef enum GameScreen { LOGO = 0, TITLE, GAMEPLAY, HIGH_SCORE, ENDING } GameScreen;
 
 typedef struct respostaNode {
     char resposta[1000];
@@ -15,7 +18,11 @@ typedef struct {
     int pontuacao;
 } Jogador;
 
-// Declarações de Funções
+typedef enum {
+    STORAGE_POSITION_SCORE      = 0,
+    STORAGE_POSITION_HISCORE    = 1
+} StorageData;
+
 int mainJogo(int x); // é a main do jogo, falta integrar com o raylib
 void atualizaRanking(Jogador ranking[], char *nome, int pontuacao, int *numJogadores);
 void insertionSort(Jogador ranking[], int numJogadores);
@@ -25,6 +32,8 @@ void lerPerguntasRespostas(char *perguntas[], char *respostas[], const char *per
 RespostaNode* addRedposta(RespostaNode *head, char *resposta);
 void liberaLista(RespostaNode *head);
 void jogo(char *perguntas[], char *respostas[], int numPerguntas, int *pontuacao);
+static bool SaveStorageValue(unsigned int position, int value);
+static int LoadStorageValue(unsigned int position);
 
 // Globais
 Jogador ranking[100];
@@ -42,16 +51,36 @@ int main(void)
     
     // TODO: Inicialização das variáveis e carregamento de todos os dados necessários!
     // Variaveis Logica
-    char nome[50];
-    char escolha;
-    int pontuacao = 0;
-    int numPerguntas = 0;
-    char *perguntas[100];
-    char *respostas[100];
-    Jogador rankingAna[100];
-    Jogador rankingCaio[100];
-    int numJogadoresAna = 0;
-    int numJogadoresCaio = 0;
+        // main
+        char nome[50];
+        char escolha;
+        int pontuacao = 0;
+        int numPerguntas = 0;
+        char *perguntas[100];
+        char *respostas[100];
+        Jogador rankingAna[100];
+        Jogador rankingCaio[100];
+        int numJogadoresAna = 0;
+        int numJogadoresCaio = 0;
+    
+        // highscore
+        int score = 0;
+        int hiscore = 0;
+    
+        // input nome
+        char name[MAX_INPUT_CHARS + 1] = "\0";      // NOTE: One extra space required for null terminator char '\0'
+        int letterCount = 0;
+        Rectangle textBox = { screenWidth/2.0f - 100, 180, 225, 50 };
+        bool mouseOnText = false;
+    
+        // botao next
+        Texture2D button = LoadTexture("/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/resources/button.png"); // Load button texture
+        float frameHeight = (float)button.height/NUM_FRAMES;
+        Rectangle sourceRec = { 0, 0, (float)button.width, frameHeight };
+        Rectangle btnBounds = { screenWidth/2.0f - button.width/2.0f, screenHeight/2.0f - button.height/NUM_FRAMES/2.0f, (float)button.width, frameHeight }; // Define button bounds on screen
+        int btnState = 0;               // Button state: 0-NORMAL, 1-MOUSE_HOVER, 2-PRESSED
+        bool btnAction = false;         // Button action should be activated
+        Vector2 mousePoint = { 0.0f, 0.0f };
     
     // Variaveis Front Jogo
         // audio jogo
@@ -124,10 +153,91 @@ int main(void)
             } break;
             case GAMEPLAY:
             {
-                // variaveis da tela GAMEPLAY
+                if (CheckCollisionPointRec(GetMousePosition(), textBox)) mouseOnText = true;
+                else mouseOnText = false;
 
+                if (mouseOnText)
+                {
+                    // Set the window's cursor to the I-Beam
+                    SetMouseCursor(MOUSE_CURSOR_IBEAM);
+
+                    // Get char pressed (unicode character) on the queue
+                    int key = GetCharPressed();
+
+                    // Check if more characters have been pressed on the same frame
+                    while (key > 0)
+                    {
+                        // NOTE: Only allow keys in range [32..125]
+                        if ((key >= 32) && (key <= 125) && (letterCount < MAX_INPUT_CHARS))
+                        {
+                            name[letterCount] = (char)key;
+                            name[letterCount+1] = '\0'; // Add null terminator at the end of the string.
+                            letterCount++;
+                        }
+
+                        key = GetCharPressed();  // Check next character in the queue
+                    }
+
+                    if (IsKeyPressed(KEY_BACKSPACE))
+                    {
+                        letterCount--;
+                        if (letterCount < 0) letterCount = 0;
+                        name[letterCount] = '\0';
+                    }
+                }
+                else SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+
+                if (mouseOnText) framesCounter++;
+                else framesCounter = 0;
+                
+                mousePoint = GetMousePosition();
+                btnAction = false;
+
+                // Check button state
+                if (CheckCollisionPointRec(mousePoint, btnBounds))
+                {
+                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) btnState = 2;
+                    else btnState = 1;
+
+                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) btnAction = true;
+                }
+                else btnState = 0;
+
+                if (btnAction)
+                {
+                    PlaySound(audioVaiDarNamoro);
+                    currentScreen = HIGH_SCORE;
+                }
+
+                // Calculate button frame rectangle to draw depending on button state
+                sourceRec.y = btnState*frameHeight;
+                
+                // apertar enter janela para ir para tela ENDING
+                // if (IsKeyPressed(KEY_ENTER)) currentScreen = HIGH_SCORE;
+            } break;
+            case HIGH_SCORE:
+            {
+                // variaveis da tela GAMEPLAY
+                if (IsKeyPressed(KEY_R))
+                {
+                    score = GetRandomValue(1000, 2000);
+                    hiscore = GetRandomValue(2000, 4000);
+                }
+                
+                if (IsKeyPressed(KEY_ENTER))
+                {
+                    SaveStorageValue(STORAGE_POSITION_SCORE, score);
+                    SaveStorageValue(STORAGE_POSITION_HISCORE, hiscore);
+                }
+                else if (IsKeyPressed(KEY_SPACE))
+                {
+                    // NOTE: If requested position could not be found, value 0 is returned
+                    score = LoadStorageValue(STORAGE_POSITION_SCORE);
+                    hiscore = LoadStorageValue(STORAGE_POSITION_HISCORE);
+                }
+                
                 // apertar enter ou tocar na janela para ir para tela ENDING
-                if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP)) currentScreen = ENDING;
+                if (IsKeyPressed(KEY_N)) currentScreen = ENDING;
             } break;
             case ENDING:
             {
@@ -171,9 +281,49 @@ int main(void)
                 case GAMEPLAY:
                 {
                     // desenhar tela GAMEPLAY
-                    DrawRectangle(0, 0, screenWidth, screenHeight, PURPLE);
-                    DrawText("GAMEPLAY SCREEN", 20, 20, 40, MAROON);
-                    DrawText("PRESS ENTER or TAP to JUMP to ENDING SCREEN", 130, 220, 20, MAROON);
+                    ClearBackground(RAYWHITE);
+
+                    DrawText("INSIRA SEU NOME:", 240, 140, 20, GRAY);
+
+                    DrawRectangleRec(textBox, LIGHTGRAY);
+                    if (mouseOnText) DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, RED);
+                    else DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, DARKGRAY);
+
+                    DrawText(name, (int)textBox.x + 5, (int)textBox.y + 8, 40, MAROON);
+
+                    DrawText(TextFormat("INPUT CHARS: %i/%i", letterCount, MAX_INPUT_CHARS), 315, 250, 20, DARKGRAY);
+
+                    if (mouseOnText)
+                    {
+                        if (letterCount < MAX_INPUT_CHARS)
+                        {
+                            // Draw blinking underscore char
+                            if (((framesCounter/20)%2) == 0) DrawText("_", (int)textBox.x + 8 + MeasureText(name, 40), (int)textBox.y + 12, 40, MAROON);
+                        }
+                        else DrawText("Press BACKSPACE to delete chars...", 230, 300, 20, GRAY);
+                    }
+                    
+                    DrawTextureRec(button, sourceRec, (Vector2){ btnBounds.x, btnBounds.y }, WHITE); // Draw button frame
+                    
+                    // PlaySound(audioVaiDarNamoro);
+                } break;
+                case HIGH_SCORE:
+                {
+                    // desenhar tela HIGH_SCORE
+                    ClearBackground(RAYWHITE);
+                    DrawText("GAMEPLAY SCREEN", 20, 40, 40, MAROON);
+                    DrawText("PRESS N to JUMP to ENDING SCREEN", 20, 280, 20, MAROON);
+                    
+                    DrawText(TextFormat("NAME: %s", name), 350, 60, 40, MAROON);
+                    DrawText(TextFormat("SCORE: %i", score), 280, 130, 40, MAROON);
+                    DrawText(TextFormat("HI-SCORE: %i", hiscore), 210, 200, 50, BLACK);
+
+                    DrawText(TextFormat("frames: %i", framesCounter), 10, 10, 20, LIME);
+
+                    DrawText("Press R to generate random numbers", 220, 100, 20, LIGHTGRAY);
+                    DrawText("Press ENTER to SAVE values", 250, 310, 20, LIGHTGRAY);
+                    DrawText("Press SPACE to LOAD values", 252, 350, 20, LIGHTGRAY);
+                    
                     PlaySound(audioIra);
                 } break;
                 case ENDING:
@@ -209,6 +359,8 @@ int main(void)
         UnloadTexture(backgroundTitle);  // Unload background texture
         
         // unload tela GAMEPLAY
+        UnloadTexture(button);  // Unload button texture
+    
         // unload tela ENDING
     
     CloseAudioDevice();
@@ -409,4 +561,97 @@ void jogo(char *perguntas[], char *respostas[], int numPerguntas, int *pontuacao
     }
 
     printf("Você acertou %d de %d perguntas.\n", *pontuacao, numPerguntas);
+}
+
+// Save integer value to storage file (to defined position)
+// NOTE: Storage positions is directly related to file memory layout (4 bytes each integer)
+bool SaveStorageValue(unsigned int position, int value)
+{
+    bool success = false;
+    int dataSize = 0;
+    unsigned int newDataSize = 0;
+    unsigned char *fileData = LoadFileData(STORAGE_DATA_FILE, &dataSize);
+    unsigned char *newFileData = NULL;
+
+    if (fileData != NULL)
+    {
+        if (dataSize <= (position*sizeof(int)))
+        {
+            // Increase data size up to position and store value
+            newDataSize = (position + 1)*sizeof(int);
+            newFileData = (unsigned char *)RL_REALLOC(fileData, newDataSize);
+
+            if (newFileData != NULL)
+            {
+                // RL_REALLOC succeded
+                int *dataPtr = (int *)newFileData;
+                dataPtr[position] = value;
+            }
+            else
+            {
+                // RL_REALLOC failed
+                TraceLog(LOG_WARNING, "FILEIO: [%s] Failed to realloc data (%u), position in bytes (%u) bigger than actual file size", STORAGE_DATA_FILE, dataSize, position*sizeof(int));
+
+                // We store the old size of the file
+                newFileData = fileData;
+                newDataSize = dataSize;
+            }
+        }
+        else
+        {
+            // Store the old size of the file
+            newFileData = fileData;
+            newDataSize = dataSize;
+
+            // Replace value on selected position
+            int *dataPtr = (int *)newFileData;
+            dataPtr[position] = value;
+        }
+
+        success = SaveFileData(STORAGE_DATA_FILE, newFileData, newDataSize);
+        RL_FREE(newFileData);
+
+        TraceLog(LOG_INFO, "FILEIO: [%s] Saved storage value: %i", STORAGE_DATA_FILE, value);
+    }
+    else
+    {
+        TraceLog(LOG_INFO, "FILEIO: [%s] File created successfully", STORAGE_DATA_FILE);
+
+        dataSize = (position + 1)*sizeof(int);
+        fileData = (unsigned char *)RL_MALLOC(dataSize);
+        int *dataPtr = (int *)fileData;
+        dataPtr[position] = value;
+
+        success = SaveFileData(STORAGE_DATA_FILE, fileData, dataSize);
+        UnloadFileData(fileData);
+
+        TraceLog(LOG_INFO, "FILEIO: [%s] Saved storage value: %i", STORAGE_DATA_FILE, value);
+    }
+
+    return success;
+}
+
+// Load integer value from storage file (from defined position)
+// NOTE: If requested position could not be found, value 0 is returned
+int LoadStorageValue(unsigned int position)
+{
+    int value = 0;
+    int dataSize = 0;
+    unsigned char *fileData = LoadFileData(STORAGE_DATA_FILE, &dataSize);
+
+    if (fileData != NULL)
+    {
+        if (dataSize < (position*4)) TraceLog(LOG_WARNING, "FILEIO: [%s] Failed to find storage position: %i", STORAGE_DATA_FILE, position);
+        else
+        {
+            int *dataPtr = (int *)fileData;
+            value = dataPtr[position];
+        }
+
+        UnloadFileData(fileData);
+
+        TraceLog(LOG_INFO, "FILEIO: [%s] Loaded storage value: %i", STORAGE_DATA_FILE, value);
+    }
+
+    return value;
 }
