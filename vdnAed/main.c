@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "raylib.h"
-#define STORAGE_DATA_FILE   "storage.data"   // arq Highscore
+#define STORAGE_DATA_FILE   "/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/dB/storage.data"   // arq Highscore
 #define MAX_INPUT_CHARS     9
 #define NUM_FRAMES  3   // tamanho botão
 
-typedef enum GameScreen { LOGO = 0, TITLE, GAMEPLAY, HIGH_SCORE, ENDING } GameScreen;
+typedef enum GameScreen { LOGO = 0, TITLE, START, HIGH_SCORE, JOGO, ENDING } GameScreen;
 
 typedef struct respostaNode {
     char resposta[1000];
@@ -19,8 +19,8 @@ typedef struct {
 } Jogador;
 
 typedef enum {
-    STORAGE_POSITION_SCORE      = 0,
-    STORAGE_POSITION_HISCORE    = 1
+    STORAGE_POSITION_SCORE = 0,
+    STORAGE_POSITION_HISCORE = 1
 } StorageData;
 
 int mainJogo(int x); // é a main do jogo, falta integrar com o raylib
@@ -52,8 +52,7 @@ int main(void)
     // TODO: Inicialização das variáveis e carregamento de todos os dados necessários!
     // Variaveis Logica
         // main
-        char nome[50];
-        char escolha;
+        // char nome[50]; ta como name (linha 70)
         int pontuacao = 0;
         int numPerguntas = 0;
         char *perguntas[100];
@@ -68,8 +67,8 @@ int main(void)
         int hiscore = 0;
     
         // input nome
-        char name[MAX_INPUT_CHARS + 1] = "\0";      // NOTE: One extra space required for null terminator char '\0'
-        int letterCount = 0;
+        char name[MAX_INPUT_CHARS + 1] = "\0";      // NOTE: One extra space required for null terminator char '\0' / fica armazenado dentro da execução
+        int letterCountName = 0;
         Rectangle textBox = { screenWidth/2.0f - 100, 180, 225, 50 };
         bool mouseOnText = false;
     
@@ -77,10 +76,16 @@ int main(void)
         Texture2D button = LoadTexture("/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/resources/button.png"); // Load button texture
         float frameHeight = (float)button.height/NUM_FRAMES;
         Rectangle sourceRec = { 0, 0, (float)button.width, frameHeight };
-        Rectangle btnBounds = { screenWidth/2.0f - button.width/2.0f, screenHeight/2.0f - button.height/NUM_FRAMES/2.0f, (float)button.width, frameHeight }; // Define button bounds on screen
+        Rectangle btnBounds = { screenWidth/2.0f - button.width/2.0f, screenHeight/1.25f - button.height/NUM_FRAMES/2.0f, (float)button.width, frameHeight }; // Define button bounds on screen
         int btnState = 0;               // Button state: 0-NORMAL, 1-MOUSE_HOVER, 2-PRESSED
         bool btnAction = false;         // Button action should be activated
         Vector2 mousePoint = { 0.0f, 0.0f };
+    
+        // entrada seletor caio ou ana
+        char selected[MAX_INPUT_CHARS + 1] = "\0";
+        int letterCountSelector = 0;
+        Rectangle selectorBox = { screenWidth/2.0f - 100, screenHeight/2.0f + 10, 225, 50 };
+        bool mouseOnSelector = false;
     
     // Variaveis Front Jogo
         // audio jogo
@@ -147,54 +152,11 @@ int main(void)
                 
                 scrollingBackTitle -= 0.1f;
                 if (scrollingBackTitle <= -backgroundTitle.width) scrollingBackTitle = 0;
-
-                // apertar enter ou tocar na janela para ir para tela GAMEPLAY
-                if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP)) currentScreen = GAMEPLAY;
-            } break;
-            case GAMEPLAY:
-            {
-                if (CheckCollisionPointRec(GetMousePosition(), textBox)) mouseOnText = true;
-                else mouseOnText = false;
-
-                if (mouseOnText)
-                {
-                    // Set the window's cursor to the I-Beam
-                    SetMouseCursor(MOUSE_CURSOR_IBEAM);
-
-                    // Get char pressed (unicode character) on the queue
-                    int key = GetCharPressed();
-
-                    // Check if more characters have been pressed on the same frame
-                    while (key > 0)
-                    {
-                        // NOTE: Only allow keys in range [32..125]
-                        if ((key >= 32) && (key <= 125) && (letterCount < MAX_INPUT_CHARS))
-                        {
-                            name[letterCount] = (char)key;
-                            name[letterCount+1] = '\0'; // Add null terminator at the end of the string.
-                            letterCount++;
-                        }
-
-                        key = GetCharPressed();  // Check next character in the queue
-                    }
-
-                    if (IsKeyPressed(KEY_BACKSPACE))
-                    {
-                        letterCount--;
-                        if (letterCount < 0) letterCount = 0;
-                        name[letterCount] = '\0';
-                    }
-                }
-                else SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-
-                if (mouseOnText) framesCounter++;
-                else framesCounter = 0;
                 
                 mousePoint = GetMousePosition();
                 btnAction = false;
 
-                // Check button state
-                if (CheckCollisionPointRec(mousePoint, btnBounds))
+                if (CheckCollisionPointRec(mousePoint, btnBounds))  // Check button state
                 {
                     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) btnState = 2;
                     else btnState = 1;
@@ -203,21 +165,111 @@ int main(void)
                 }
                 else btnState = 0;
 
-                if (btnAction)
+                if (btnAction)  // apertar no botão para ir para tela ENDING
+                {
+                    PlaySound(audioEleGosta);
+                    currentScreen = START;
+                }
+
+                sourceRec.y = btnState*frameHeight; // Calculate button frame rectangle to draw depending on button state
+
+                // apertar enter ou tocar na janela para ir para tela START
+                // if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP)) currentScreen = START;
+            } break;
+            case START:
+            {
+                // nome
+                if (CheckCollisionPointRec(GetMousePosition(), textBox)) mouseOnText = true;
+                else mouseOnText = false;
+
+                if (mouseOnText)
+                {
+                    SetMouseCursor(MOUSE_CURSOR_IBEAM); // Set the window's cursor to the I-Beam
+                    int keyN = GetCharPressed(); // Get char pressed (unicode character) on the queue
+
+                    while (keyN > 0) // Check if more characters have been pressed on the same frame
+                    {
+                        if ((keyN >= 32) && (keyN <= 125) && (letterCountName < MAX_INPUT_CHARS)) // NOTE: Only allow keys in range [32..125]
+                        {
+                            name[letterCountName] = (char)keyN;
+                            name[letterCountName+1] = '\0'; // Add null terminator at the end of the string.
+                            letterCountName++;
+                        }
+                        keyN = GetCharPressed(); // Check next character in the queue
+                    }
+
+                    if (IsKeyPressed(KEY_BACKSPACE))
+                    {
+                        letterCountName--;
+                        if (letterCountName < 0) letterCountName = 0;
+                        name[letterCountName] = '\0';
+                    }
+                }
+                else SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+
+                if (mouseOnText) framesCounter++;
+                else framesCounter = 0;
+                
+                // ana ou caio
+                if (CheckCollisionPointRec(GetMousePosition(), selectorBox)) mouseOnSelector = true;
+                else mouseOnSelector = false;
+
+                if (mouseOnSelector)
+                {
+                    SetMouseCursor(MOUSE_CURSOR_IBEAM); // Set the window's cursor to the I-Beam
+                    int keyS = GetCharPressed(); // Get char pressed (unicode character) on the queue
+
+                    while (keyS > 0) // Check if more characters have been pressed on the same frame
+                    {
+                        if ((keyS >= 32) && (keyS <= 125) && (letterCountSelector < MAX_INPUT_CHARS)) // NOTE: Only allow keys in range [32..125]
+                        {
+                            selected[letterCountSelector] = (char)keyS;
+                            selected[letterCountSelector+1] = '\0'; // Add null terminator at the end of the string.
+                            letterCountSelector++;
+                        }
+                        keyS = GetCharPressed(); // Check next character in the queue
+                    }
+
+                    if (IsKeyPressed(KEY_BACKSPACE))
+                    {
+                        letterCountSelector--;
+                        if (letterCountSelector < 0) letterCountSelector = 0;
+                        name[letterCountSelector] = '\0';
+                    }
+                }
+                else SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+
+                if (mouseOnSelector) framesCounter++;
+                else framesCounter = 0;
+                
+                // botão
+                
+                mousePoint = GetMousePosition();
+                btnAction = false;
+
+                if (CheckCollisionPointRec(mousePoint, btnBounds))  // Check button state
+                {
+                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) btnState = 2;
+                    else btnState = 1;
+
+                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) btnAction = true;
+                }
+                else btnState = 0;
+
+                if (btnAction)  // apertar no botão para ir para tela ENDING
                 {
                     PlaySound(audioVaiDarNamoro);
                     currentScreen = HIGH_SCORE;
                 }
 
-                // Calculate button frame rectangle to draw depending on button state
-                sourceRec.y = btnState*frameHeight;
+                sourceRec.y = btnState*frameHeight; // Calculate button frame rectangle to draw depending on button state
                 
                 // apertar enter janela para ir para tela ENDING
                 // if (IsKeyPressed(KEY_ENTER)) currentScreen = HIGH_SCORE;
             } break;
             case HIGH_SCORE:
             {
-                // variaveis da tela GAMEPLAY
+                // variaveis da tela HIGH_SCORE
                 if (IsKeyPressed(KEY_R))
                 {
                     score = GetRandomValue(1000, 2000);
@@ -238,6 +290,47 @@ int main(void)
                 
                 // apertar enter ou tocar na janela para ir para tela ENDING
                 if (IsKeyPressed(KEY_N)) currentScreen = ENDING;
+            } break;
+            case JOGO: // falta ajustar as entradas e os prints das perguntas (nas funções anexas)
+            {
+                if (strcmp(selected, "C") == 0 || strcmp(selected, "c") == 0 || strcmp(selected, "Caio") == 0 || strcmp(selected, "caio") == 0)
+                {
+                    carregaRankingDeArquivo(rankingCaio, &numJogadoresCaio, "rankingCaio.txt");
+                    lerPerguntasRespostas(perguntas, respostas, "perguntasCaio.txt", "respostaCaio.txt", &numPerguntas);
+                }
+                else
+                {
+                    carregaRankingDeArquivo(rankingAna, &numJogadoresAna, "rankingAna.txt");
+                    lerPerguntasRespostas(perguntas, respostas, "perguntasAna.txt", "respostaAna.txt", &numPerguntas);
+                }
+
+                jogo(perguntas, respostas, numPerguntas, &pontuacao);
+
+                if (strcmp(selected, "C") == 0 || strcmp(selected, "c") == 0 || strcmp(selected, "Caio") == 0 || strcmp(selected, "caio") == 0)
+                {
+                    atualizaRanking(rankingCaio, name, pontuacao, &numJogadoresCaio);
+                    insertionSort(rankingCaio, numJogadoresCaio);
+                    salvaRankingEmArquivo(rankingCaio, numJogadoresCaio, "rankingCaio.txt");
+                } else {
+                    atualizaRanking(rankingAna, name, pontuacao, &numJogadoresAna);
+                    insertionSort(rankingAna, numJogadoresAna);
+                    salvaRankingEmArquivo(rankingAna, numJogadoresAna, "rankingAna.txt");
+                }
+
+                if (strcmp(selected, "C") == 0 || strcmp(selected, "c") == 0 || strcmp(selected, "Caio") == 0 || strcmp(selected, "caio") == 0)
+                {
+                    for (int i = 0; i < numJogadoresCaio; i++) printf("%d. %s - %d pontos\n", i + 1, rankingCaio[i].nome, rankingCaio[i].pontuacao);
+                }
+                else
+                {
+                    for (int i = 0; i < numJogadoresAna; i++) printf("%d. %s - %d pontos\n", i + 1, rankingAna[i].nome, rankingAna[i].pontuacao);
+                }
+                
+                for (int i = 0; i < numPerguntas; i++)
+                {
+                    free(perguntas[i]);
+                    free(respostas[i]);
+                }
             } break;
             case ENDING:
             {
@@ -276,33 +369,47 @@ int main(void)
                     DrawTextEx(font1, msg1, fontPosition1, (float)font1.baseSize, -3, WHITE);   // Font loading
                     DrawTextEx(font2, msg2, fontPosition2, (float)font2.baseSize, -2, WHITE);   // Font loading
                     DrawTextEx(font3, msg3, fontPosition3, (float)font3.baseSize, 2, WHITE);    // Font loading
-                    PlaySound(audioEleGosta);
+                    
+                    DrawTextureRec(button, sourceRec, (Vector2){ btnBounds.x, btnBounds.y }, WHITE); // Draw button frame
                 } break;
-                case GAMEPLAY:
+                case START:
                 {
-                    // desenhar tela GAMEPLAY
-                    ClearBackground(RAYWHITE);
-
-                    DrawText("INSIRA SEU NOME:", 240, 140, 20, GRAY);
-
+                    // desenhar tela START
+                    ClearBackground(RAYWHITE);  // falta fazer o fundo bonitinho
+                    
+                    // nome
+                    DrawText("INSIRA SEU NOME:", 200, 140, 20, GRAY);
                     DrawRectangleRec(textBox, LIGHTGRAY);
                     if (mouseOnText) DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, RED);
                     else DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, DARKGRAY);
-
                     DrawText(name, (int)textBox.x + 5, (int)textBox.y + 8, 40, MAROON);
-
-                    DrawText(TextFormat("INPUT CHARS: %i/%i", letterCount, MAX_INPUT_CHARS), 315, 250, 20, DARKGRAY);
-
+                    DrawText(TextFormat("INPUT CHARS: %i/%i", letterCountName, MAX_INPUT_CHARS), 315, 250, 15, DARKGRAY);
                     if (mouseOnText)
                     {
-                        if (letterCount < MAX_INPUT_CHARS)
+                        if (letterCountName < MAX_INPUT_CHARS)
                         {
-                            // Draw blinking underscore char
-                            if (((framesCounter/20)%2) == 0) DrawText("_", (int)textBox.x + 8 + MeasureText(name, 40), (int)textBox.y + 12, 40, MAROON);
+                            if (((framesCounter/20)%2) == 0) DrawText("_", (int)textBox.x + 8 + MeasureText(name, 40), (int)textBox.y + 12, 40, MAROON);    // Draw blinking underscore char
                         }
                         else DrawText("Press BACKSPACE to delete chars...", 230, 300, 20, GRAY);
                     }
                     
+                    // seletor
+                    DrawText("Deseja conquistar Ana (A) ou Caio (C):", 200, 330, 20, GRAY);
+                    DrawRectangleRec(selectorBox, LIGHTGRAY);
+                    if (mouseOnSelector) DrawRectangleLines((int)selectorBox.x, (int)selectorBox.y, (int)selectorBox.width, (int)selectorBox.height, RED);
+                    else DrawRectangleLines((int)selectorBox.x, (int)selectorBox.y, (int)selectorBox.width, (int)selectorBox.height, DARKGRAY);
+                    DrawText(selected, (int)selectorBox.x + 5, (int)selectorBox.y + 8, 40, MAROON);
+                    DrawText(TextFormat("INPUT CHARS: %i/%i", letterCountSelector, MAX_INPUT_CHARS), 315, 430, 15, DARKGRAY);
+                    if (mouseOnSelector)
+                    {
+                        if (letterCountSelector < MAX_INPUT_CHARS)
+                        {
+                            if (((framesCounter/20)%2) == 0) DrawText("_", (int)selectorBox.x + 8 + MeasureText(selected, 40), (int)selectorBox.y + 12, 40, MAROON);    // Draw blinking underscore char
+                        }
+                        else DrawText("Press BACKSPACE to delete chars...", 230, 300, 20, GRAY);
+                    }
+                    
+                    // botão
                     DrawTextureRec(button, sourceRec, (Vector2){ btnBounds.x, btnBounds.y }, WHITE); // Draw button frame
                     
                     // PlaySound(audioVaiDarNamoro);
@@ -310,8 +417,9 @@ int main(void)
                 case HIGH_SCORE:
                 {
                     // desenhar tela HIGH_SCORE
+                    // a tela ta desconfigurada, com textos em cima do outro
                     ClearBackground(RAYWHITE);
-                    DrawText("GAMEPLAY SCREEN", 20, 40, 40, MAROON);
+                    DrawText("HIGH SCORE SCREEN", 20, 40, 40, MAROON);
                     DrawText("PRESS N to JUMP to ENDING SCREEN", 20, 280, 20, MAROON);
                     
                     DrawText(TextFormat("NAME: %s", name), 350, 60, 40, MAROON);
@@ -325,6 +433,10 @@ int main(void)
                     DrawText("Press SPACE to LOAD values", 252, 350, 20, LIGHTGRAY);
                     
                     PlaySound(audioIra);
+                } break;
+                case JOGO:
+                {
+                    
                 } break;
                 case ENDING:
                 {
@@ -358,7 +470,7 @@ int main(void)
         UnloadFont(font3);      // Font unloading
         UnloadTexture(backgroundTitle);  // Unload background texture
         
-        // unload tela GAMEPLAY
+        // unload tela START
         UnloadTexture(button);  // Unload button texture
     
         // unload tela ENDING
@@ -366,64 +478,6 @@ int main(void)
     CloseAudioDevice();
     CloseWindow();        // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
-
-    return 0;
-}
-
-// falta juntar a logica com o front
-int mainJogo(int x)
-{
-    char nome[50];
-    char escolha;
-    int pontuacao = 0;
-    int numPerguntas = 0;
-    char *perguntas[100];
-    char *respostas[100];
-    Jogador rankingAna[100];
-    Jogador rankingCaio[100];
-    int numJogadoresAna = 0;
-    int numJogadoresCaio = 0;
-
-    printf("Digite seu nome: ");
-    scanf("%49s", nome);
-    getchar();
-    printf("Quem você quer conquistar? (Caio = C, Ana = A): ");
-    scanf(" %c", &escolha);
-    getchar();
-    
-    if (escolha == 'C' || escolha == 'c') {
-        carregaRankingDeArquivo(rankingCaio, &numJogadoresCaio, "rankingCaio.txt");
-        lerPerguntasRespostas(perguntas, respostas, "perguntasCaio.txt", "respostaCaio.txt", &numPerguntas);
-    } else {
-        carregaRankingDeArquivo(rankingAna, &numJogadoresAna, "rankingAna.txt");
-        lerPerguntasRespostas(perguntas, respostas, "perguntasAna.txt", "respostaAna.txt", &numPerguntas);
-    }
-
-    jogo(perguntas, respostas, numPerguntas, &pontuacao);
-
-    if (escolha == 'C' || escolha == 'c') {
-        atualizaRanking(rankingCaio, nome, pontuacao, &numJogadoresCaio);
-        insertionSort(rankingCaio, numJogadoresCaio);
-        salvaRankingEmArquivo(rankingCaio, numJogadoresCaio, "rankingCaio.txt");
-    } else {
-        atualizaRanking(rankingAna, nome, pontuacao, &numJogadoresAna);
-        insertionSort(rankingAna, numJogadoresAna);
-        salvaRankingEmArquivo(rankingAna, numJogadoresAna, "rankingAna.txt");
-    }
-
-    if (escolha == 'C' || escolha == 'c') {
-    for (int i = 0; i < numJogadoresCaio; i++) {
-        printf("%d. %s - %d pontos\n", i + 1, rankingCaio[i].nome, rankingCaio[i].pontuacao);
-    }
-    } else {
-        for (int i = 0; i < numJogadoresAna; i++) {
-            printf("%d. %s - %d pontos\n", i + 1, rankingAna[i].nome, rankingAna[i].pontuacao);
-        }
-    }
-    for (int i = 0; i < numPerguntas; i++) {
-        free(perguntas[i]);
-        free(respostas[i]);
-    }
 
     return 0;
 }
