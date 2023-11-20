@@ -76,10 +76,19 @@ int main(void)
         Texture2D button = LoadTexture("/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/resources/button.png"); // Load button texture
         float frameHeight = (float)button.height/NUM_FRAMES;
         Rectangle sourceRec = { 0, 0, (float)button.width, frameHeight };
-        Rectangle btnBounds = { screenWidth/2.0f - button.width/2.0f, screenHeight/1.25f - button.height/NUM_FRAMES/2.0f, (float)button.width, frameHeight }; // Define button bounds on screen
+        Rectangle btnBounds = { screenWidth/1.5f - button.width/2.0f, screenHeight/1.25f - button.height/NUM_FRAMES/2.0f, (float)button.width, frameHeight }; // Define button bounds on screen
         int btnState = 0;               // Button state: 0-NORMAL, 1-MOUSE_HOVER, 2-PRESSED
         bool btnAction = false;         // Button action should be activated
         Vector2 mousePoint = { 0.0f, 0.0f };
+    
+        // botão voltar
+        Texture2D buttonBack = LoadTexture("/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/resources/buttonBack.png"); // Load button texture
+        float frameHeightBack = (float)buttonBack.height/NUM_FRAMES;
+        Rectangle sourceRecBack = { 0, 0, (float)buttonBack.width, frameHeightBack };
+        Rectangle btnBoundsBack = { screenWidth/2.5f - button.width/2.0f, screenHeight/1.25f - button.height/NUM_FRAMES/2.0f, (float)button.width, frameHeight }; // Define button bounds on screen
+        int btnBackState = 0;               // Button state: 0-NORMAL, 1-MOUSE_HOVER, 2-PRESSED
+        bool btnBackAction = false;         // Button action should be activated
+        Vector2 mousePointBack = { 0.0f, 0.0f };
     
         // entrada seletor caio ou ana
         char selected[MAX_INPUT_CHARS + 1] = "\0";
@@ -234,7 +243,7 @@ int main(void)
                     {
                         letterCountSelector--;
                         if (letterCountSelector < 0) letterCountSelector = 0;
-                        name[letterCountSelector] = '\0';
+                        selected[letterCountSelector] = '\0';
                     }
                 }
                 else SetMouseCursor(MOUSE_CURSOR_DEFAULT);
@@ -289,10 +298,51 @@ int main(void)
                 }
                 
                 // apertar enter ou tocar na janela para ir para tela ENDING
-                if (IsKeyPressed(KEY_N)) currentScreen = ENDING;
+                if (IsKeyPressed(KEY_N)) currentScreen = JOGO;
             } break;
             case JOGO: // falta ajustar as entradas e os prints das perguntas (nas funções anexas)
             {
+                mousePointBack = GetMousePosition();
+                btnBackAction = false;
+
+                if (CheckCollisionPointRec(mousePointBack, btnBoundsBack))  // Check button state
+                {
+                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) btnBackState = 2;
+                    else btnBackState = 1;
+
+                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) btnBackAction = true;
+                }
+                else btnBackState = 0;
+
+                if (btnBackAction)  // apertar no botão para ir para tela ENDING
+                {
+                    PlaySound(audioVaiDarNamoro);
+                    currentScreen = HIGH_SCORE;
+                }
+
+                sourceRecBack.y = btnBackState*frameHeight; // Calculate button frame rectangle to draw depending on button state
+                
+                mousePoint = GetMousePosition();
+                btnAction = false;
+
+                if (CheckCollisionPointRec(mousePoint, btnBounds))  // Check button state
+                {
+                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) btnState = 2;
+                    else btnState = 1;
+
+                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) btnAction = true;
+                }
+                else btnState = 0;
+
+                if (btnAction)  // apertar no botão para ir para tela ENDING
+                {
+                    PlaySound(audioVaiDarNamoro);
+                    currentScreen = ENDING;
+                }
+
+                sourceRec.y = btnState*frameHeight; // Calculate button frame rectangle to draw depending on button state
+                
+                
                 if (strcmp(selected, "C") == 0 || strcmp(selected, "c") == 0 || strcmp(selected, "Caio") == 0 || strcmp(selected, "caio") == 0)
                 {
                     carregaRankingDeArquivo(rankingCaio, &numJogadoresCaio, "rankingCaio.txt");
@@ -306,7 +356,7 @@ int main(void)
 
                 jogo(perguntas, respostas, numPerguntas, &pontuacao);
 
-                if (strcmp(selected, "C") == 0 || strcmp(selected, "c") == 0 || strcmp(selected, "Caio") == 0 || strcmp(selected, "caio") == 0)
+                if (strcasecmp(selected, "C") == 0 || strcasecmp(selected, "caio") == 0)
                 {
                     atualizaRanking(rankingCaio, name, pontuacao, &numJogadoresCaio);
                     insertionSort(rankingCaio, numJogadoresCaio);
@@ -317,7 +367,7 @@ int main(void)
                     salvaRankingEmArquivo(rankingAna, numJogadoresAna, "rankingAna.txt");
                 }
 
-                if (strcmp(selected, "C") == 0 || strcmp(selected, "c") == 0 || strcmp(selected, "Caio") == 0 || strcmp(selected, "caio") == 0)
+                if (strcasecmp(selected, "C") == 0 || strcasecmp(selected, "caio") == 0)
                 {
                     for (int i = 0; i < numJogadoresCaio; i++) printf("%d. %s - %d pontos\n", i + 1, rankingCaio[i].nome, rankingCaio[i].pontuacao);
                 }
@@ -436,6 +486,12 @@ int main(void)
                 } break;
                 case JOGO:
                 {
+                    ClearBackground(RAYWHITE);
+                    DrawText("TELA JOGO", 20, 40, 40, MAROON);
+                    // botão next
+                    DrawTextureRec(button, sourceRec, (Vector2){ btnBounds.x, btnBounds.y }, WHITE); // Draw button frame
+                    // botão voltar
+                    DrawTextureRec(buttonBack, sourceRecBack, (Vector2){ btnBoundsBack.x, btnBoundsBack.y }, WHITE); // Draw button frame
                     
                 } break;
                 case ENDING:
