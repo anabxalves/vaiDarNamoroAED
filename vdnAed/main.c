@@ -38,6 +38,8 @@ static int LoadStorageValue(unsigned int position);
 // Globais
 Jogador ranking[100];
 int numJogadores = 0;
+char perguntaAtual[100];
+char respostaAtual[100];
 
 int main(void)
 {
@@ -96,6 +98,11 @@ int main(void)
         Rectangle selectorBox = { screenWidth/2.0f - 100, screenHeight/2.0f + 10, 225, 50 };
         bool mouseOnSelector = false;
     
+        // input respsotas
+        int letterCountResponse = 0;
+        Rectangle textBoxResponse = { screenWidth/2.0f - 100, 180, 225, 50 };
+        bool mouseOnTextResponse = false;
+    
     // Variaveis Front Jogo
         // audio jogo
         Sound audioVaiDarNamoro;
@@ -118,7 +125,7 @@ int main(void)
         // title screen
         const char msg1[50] = "CHEGOU A HORA DE DAR MACTH...";
         const char msg2[50] = "... com um dos nossos DISPUTADOS candidatos...";
-        const char msg3[50] = "... aperte ENTER para jogar <3";
+        const char msg3[50] = "... aperte NEXT para jogar <3";
         
         Font font1 = LoadFont("/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/resources/custom_mecha.png");
         Font font2 = LoadFont("/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/resources/custom_alagard.png");
@@ -252,7 +259,6 @@ int main(void)
                 else framesCounter = 0;
                 
                 // botão
-                
                 mousePoint = GetMousePosition();
                 btnAction = false;
 
@@ -302,9 +308,11 @@ int main(void)
             } break;
             case JOGO: // falta ajustar as entradas e os prints das perguntas (nas funções anexas)
             {
+                // ta BUGADAO kk
+                
+                // botão voltar
                 mousePointBack = GetMousePosition();
                 btnBackAction = false;
-
                 if (CheckCollisionPointRec(mousePointBack, btnBoundsBack))  // Check button state
                 {
                     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) btnBackState = 2;
@@ -313,18 +321,16 @@ int main(void)
                     if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) btnBackAction = true;
                 }
                 else btnBackState = 0;
-
                 if (btnBackAction)  // apertar no botão para ir para tela ENDING
                 {
                     PlaySound(audioVaiDarNamoro);
                     currentScreen = HIGH_SCORE;
                 }
-
                 sourceRecBack.y = btnBackState*frameHeight; // Calculate button frame rectangle to draw depending on button state
                 
+                // botão next
                 mousePoint = GetMousePosition();
                 btnAction = false;
-
                 if (CheckCollisionPointRec(mousePoint, btnBounds))  // Check button state
                 {
                     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) btnState = 2;
@@ -333,7 +339,6 @@ int main(void)
                     if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) btnAction = true;
                 }
                 else btnState = 0;
-
                 if (btnAction)  // apertar no botão para ir para tela ENDING
                 {
                     PlaySound(audioVaiDarNamoro);
@@ -342,19 +347,74 @@ int main(void)
 
                 sourceRec.y = btnState*frameHeight; // Calculate button frame rectangle to draw depending on button state
                 
+                // logica jogo
                 
-                if (strcmp(selected, "C") == 0 || strcmp(selected, "c") == 0 || strcmp(selected, "Caio") == 0 || strcmp(selected, "caio") == 0)
+                if (strcasecmp(selected, "C") == 0 || strcasecmp(selected, "caio") == 0)
                 {
                     carregaRankingDeArquivo(rankingCaio, &numJogadoresCaio, "rankingCaio.txt");
-                    lerPerguntasRespostas(perguntas, respostas, "perguntasCaio.txt", "respostaCaio.txt", &numPerguntas);
+                    lerPerguntasRespostas(perguntas, respostas, "/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/dB/perguntasCaio.txt", "/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/dB/respostaCaio.txt", &numPerguntas);
                 }
                 else
                 {
                     carregaRankingDeArquivo(rankingAna, &numJogadoresAna, "rankingAna.txt");
-                    lerPerguntasRespostas(perguntas, respostas, "perguntasAna.txt", "respostaAna.txt", &numPerguntas);
+                    lerPerguntasRespostas(perguntas, respostas, "/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/dB/perguntasAna.txt", "/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/dB/respostaAna.txt", &numPerguntas);
+                }
+                
+                // jogo(perguntas, respostas, numPerguntas, &pontuacao);
+                
+                char respostaUsuario[1000];
+               
+                for (int i = 0; i < numPerguntas; i++)
+                {
+                    strcpy(perguntaAtual, perguntas[i]);
+                    // printf("Pergunta %d: %s\n", i + 1, perguntas[i]);
+                    
+                    if (CheckCollisionPointRec(GetMousePosition(), textBox)) mouseOnTextResponse = true;
+                    else mouseOnTextResponse = false;
+
+                    if (mouseOnTextResponse)
+                    {
+                        // Set the window's cursor to the I-Beam
+                        SetMouseCursor(MOUSE_CURSOR_IBEAM);
+                        // Get char pressed (unicode character) on the queue
+                        int keyResponse = GetCharPressed();
+                        // Check if more characters have been pressed on the same frame
+                        while (keyResponse > 0)
+                        {
+                        // NOTE: Only allow keys in range [32..125]
+                            if ((keyResponse >= 32) && (keyResponse <= 125) && (letterCountResponse < MAX_INPUT_CHARS))
+                            {
+                                respostaAtual[letterCountResponse] = (char)keyResponse;
+                                respostaAtual[letterCountResponse+1] = '\0'; // Add null terminator at the end of the string.
+                                letterCountResponse++;
+                            }
+                        keyResponse = GetCharPressed();  // Check next character in the queue
+                    }
+
+                    if (IsKeyPressed(KEY_BACKSPACE))
+                    {
+                        letterCountResponse--;
+                        if (letterCountResponse < 0) letterCountResponse = 0;
+                        respostaAtual[letterCountResponse] = '\0';
+                        }
+                    }
+                    else if (IsKeyPressed(KEY_ENTER))
+                    {
+                        strcpy(respostaUsuario, respostaAtual); // tentando usar as globais
+                        respostaUsuario[strcspn(respostaUsuario, "\n")] = 0;
+                        strcpy(respostaAtual, " ");
+                        respostas[i][strcspn(respostas[i], "\n")] = 0;
+
+                        if (strcasecmp(respostaUsuario, respostas[i]) == 0) (pontuacao)++;
+                        continue;
+                    }
+                    else SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+                    
+                    if (mouseOnTextResponse) framesCounter++;
+                    else framesCounter = 0;
                 }
 
-                jogo(perguntas, respostas, numPerguntas, &pontuacao);
+                // printf("Você acertou %d de %d perguntas.\n", pontuacao, numPerguntas);
 
                 if (strcasecmp(selected, "C") == 0 || strcasecmp(selected, "caio") == 0)
                 {
@@ -467,20 +527,19 @@ int main(void)
                 case HIGH_SCORE:
                 {
                     // desenhar tela HIGH_SCORE
-                    // a tela ta desconfigurada, com textos em cima do outro
-                    ClearBackground(RAYWHITE);
+                    ClearBackground(RAYWHITE); // falta por fundo bonitinho
                     DrawText("HIGH SCORE SCREEN", 20, 40, 40, MAROON);
-                    DrawText("PRESS N to JUMP to ENDING SCREEN", 20, 280, 20, MAROON);
+                    DrawText("PRESS N to JUMP to ENDING SCREEN", 20, 480, 20, MAROON);
                     
-                    DrawText(TextFormat("NAME: %s", name), 350, 60, 40, MAROON);
-                    DrawText(TextFormat("SCORE: %i", score), 280, 130, 40, MAROON);
-                    DrawText(TextFormat("HI-SCORE: %i", hiscore), 210, 200, 50, BLACK);
+                    DrawText(TextFormat("NAME: %s", name), 350, 100, 40, MAROON);
+                    DrawText(TextFormat("SCORE: %i", score), 280, 180, 40, MAROON);
+                    DrawText(TextFormat("HI-SCORE: %i", hiscore), 280, 260, 50, BLACK);
 
                     DrawText(TextFormat("frames: %i", framesCounter), 10, 10, 20, LIME);
 
-                    DrawText("Press R to generate random numbers", 220, 100, 20, LIGHTGRAY);
-                    DrawText("Press ENTER to SAVE values", 250, 310, 20, LIGHTGRAY);
-                    DrawText("Press SPACE to LOAD values", 252, 350, 20, LIGHTGRAY);
+                    DrawText("Press R to generate random numbers", 220, 310, 20, LIGHTGRAY);
+                    DrawText("Press ENTER to SAVE values", 250, 350, 20, LIGHTGRAY);
+                    DrawText("Press SPACE to LOAD values", 252, 390, 20, LIGHTGRAY);
                     
                     PlaySound(audioIra);
                 } break;
@@ -492,6 +551,15 @@ int main(void)
                     DrawTextureRec(button, sourceRec, (Vector2){ btnBounds.x, btnBounds.y }, WHITE); // Draw button frame
                     // botão voltar
                     DrawTextureRec(buttonBack, sourceRecBack, (Vector2){ btnBoundsBack.x, btnBoundsBack.y }, WHITE); // Draw button frame
+                    
+                    DrawText(perguntaAtual, 20, 100, 40, BLACK);
+                    
+                    // caixa resposta
+                    DrawRectangleRec(textBoxResponse, LIGHTGRAY);
+                    if (mouseOnTextResponse) DrawRectangleLines((int)textBoxResponse.x, (int)textBoxResponse.y, (int)textBoxResponse.width, (int)textBoxResponse.height, RED);
+                    else DrawRectangleLines((int)textBoxResponse.x, (int)textBoxResponse.y, (int)textBoxResponse.width, (int)textBoxResponse.height, DARKGRAY);
+                    
+                    DrawText(respostaAtual, (int)textBoxResponse.x + 5, (int)textBoxResponse.y + 8, 40, MAROON);
                     
                 } break;
                 case ENDING:
@@ -657,10 +725,13 @@ void jogo(char *perguntas[], char *respostas[], int numPerguntas, int *pontuacao
 {
     char respostaUsuario[1000];
 
-    for (int i = 0; i < numPerguntas; i++) {
+    for (int i = 0; i < numPerguntas; i++)
+    {
+        strcpy(perguntaAtual, perguntas[i]);
         printf("Pergunta %d: %s\n", i + 1, perguntas[i]);
-        printf("Resposta: ");
-        fgets(respostaUsuario, 1000, stdin); // Modificação aqui
+        // printf("Resposta: ");
+        // fgets(respostaUsuario, 1000, stdin); // Modificação aqui
+        strcpy(respostaUsuario, respostaAtual); // tentando usar as globais
         respostaUsuario[strcspn(respostaUsuario, "\n")] = 0;
 
         respostas[i][strcspn(respostas[i], "\n")] = 0;
