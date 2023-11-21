@@ -68,10 +68,6 @@ int main(void)
         int numJogadoresCaio = 0;
         char respostaUsuario[1000];
     
-        // highscore
-        int score = 0;
-        int hiscore = 0;
-    
         // input nome
         char name[MAX_INPUT_CHARS + 1] = "\0";      // NOTE: One extra space required for null terminator char '\0' / fica armazenado dentro da execução
         int letterCountName = 0;
@@ -145,7 +141,10 @@ int main(void)
         Texture2D backgroundStart = LoadTexture("/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/resources/TV - 2.png");
     
         // jogo screen
-        Texture2D backgroundJogo= LoadTexture("/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/resources/TV - 3.png");
+        Texture2D backgroundJogo = LoadTexture("/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/resources/TV - 3.png");
+    
+        // ending screen
+        Texture2D backgroundEnding = LoadTexture("/Users/anabxalves/Desktop/CESAR/AED/vdnAed/vdnAed/resources/TV - 5.png");
     
         float scrollingBackTitle = 0.0f;
     
@@ -345,7 +344,9 @@ int main(void)
                     }
                     strcpy(respostaAtual, "Digite...");
                     
-                    PlaySound(audioVaiDarNamoro);
+                    if(contPerguntas%2 == 0) PlaySound(audioIra);
+                    else PlaySound(audioEleGosta);
+                    
                     if(contPerguntas < numPerguntas-1)
                     {
                         contPerguntas++;
@@ -421,24 +422,6 @@ int main(void)
                     salvaRankingEmArquivo(rankingAna, numJogadoresAna, "rankingAna.txt");
                 }
                 
-                if (IsKeyPressed(KEY_R))
-                {
-                    score = GetRandomValue(1000, 2000);
-                    hiscore = GetRandomValue(2000, 4000);
-                }
-                
-                if (IsKeyPressed(KEY_ENTER))
-                {
-                    SaveStorageValue(STORAGE_POSITION_SCORE, score);
-                    SaveStorageValue(STORAGE_POSITION_HISCORE, hiscore);
-                }
-                else if (IsKeyPressed(KEY_SPACE))
-                {
-                    // NOTE: If requested position could not be found, value 0 is returned
-                    score = LoadStorageValue(STORAGE_POSITION_SCORE);
-                    hiscore = LoadStorageValue(STORAGE_POSITION_HISCORE);
-                }
-                
                 // liberaLista(respostasGlobais);
                 
                 // apertar enter ou tocar na janela para ir para tela ENDING
@@ -471,6 +454,7 @@ int main(void)
                     // desenhar tela LOGO
                     DrawTextureEx(backgroundLogo, (Vector2){ scrollingBackLogo, 0 }, 0.0f, 1.0f, WHITE);
                     DrawTextureEx(backgroundLogo, (Vector2){ (backgroundLogo.width) + scrollingBackLogo, 0 }, 0.0f, 1.0f, WHITE);
+                    
                     DrawText("VAI DAR NAMORO - CESAR´S VERSION", 10, 10, 20, RED);
                     DrawText("(c) Cana Productions", screenWidth - 150, screenHeight - 20, 10, RAYWHITE);
                     PlaySound(audioIra);
@@ -533,6 +517,7 @@ int main(void)
                 } break;
                 case JOGO:
                 {
+                    // desenhar tela jogo
                     DrawTextureEx(backgroundJogo, (Vector2){ scrollingBackTitle, 0 }, 0.0f, 1.0f, WHITE);
                     DrawTextureEx(backgroundJogo, (Vector2){ (backgroundTitle.width) + scrollingBackTitle, 0 }, 0.0f, 1.0f, WHITE);
                     
@@ -557,27 +542,21 @@ int main(void)
                 case HIGH_SCORE:
                 {
                     // desenhar tela HIGH_SCORE
-                    ClearBackground(RAYWHITE); // falta por fundo bonitinho
-                    DrawText("HIGH SCORE SCREEN", 20, 40, 40, MAROON);
-                    DrawText("PRESS N to JUMP to ENDING SCREEN", 20, 480, 20, MAROON);
+                    DrawTextureEx(backgroundTitle, (Vector2){ scrollingBackTitle, 0 }, 0.0f, 1.0f, WHITE);
+                    DrawTextureEx(backgroundTitle, (Vector2){ (backgroundTitle.width) + scrollingBackTitle, 0 }, 0.0f, 1.0f, WHITE);
                     
-                    DrawText(TextFormat("NAME: %s", name), 350, 100, 40, MAROON);
-                    // DrawText(TextFormat("SCORE: %i", score), 280, 180, 40, MAROON);
-                    // DrawText(TextFormat("HI-SCORE: %i", hiscore), 280, 260, 50, BLACK);
-
-                    // DrawText(TextFormat("frames: %i", framesCounter), 10, 10, 20, LIME);
-
-                    // DrawText("Press R to generate random numbers", 220, 310, 20, LIGHTGRAY);
-                    // DrawText("Press ENTER to SAVE values", 250, 350, 20, LIGHTGRAY);
-                    // DrawText("Press SPACE to LOAD values", 252, 390, 20, LIGHTGRAY);
+                    DrawText("HIGH SCORE", 20, 40, 40, LIME);
+                    DrawText("PRESS N to JUMP to ENDING SCREEN", 400, 500, 20, RED);
+                    
+                    DrawText(TextFormat("NAME: %s", name), 550, 100, 40, RED);
                     
                     if (strcasecmp(selected, "C") == 0 || strcasecmp(selected, "caio") == 0)
                     {
-                        for (int i = 0; i < numJogadoresCaio; i++) DrawText(TextFormat("%d. %s - %d pontos\n", i + 1, rankingCaio[i].nome, rankingCaio[i].pontuacao), 200, 150+(40*i), 40, RED);
+                        for (int i = 0; i < numJogadoresCaio; i++) DrawText(TextFormat("%d. %s - %d pontos\n", i + 1, rankingCaio[i].nome, rankingCaio[i].pontuacao), 400, 150+(40*i), 40, MAGENTA);
                     }
                     else
                     {
-                        for (int i = 0; i < numJogadoresAna; i++) DrawText(TextFormat("%d. %s - %d pontos\n", i + 1, rankingAna[i].nome, rankingAna[i].pontuacao), 200, 150+(40*i), 40, RED);
+                        for (int i = 0; i < numJogadoresAna; i++) DrawText(TextFormat("%d. %s - %d pontos\n", i + 1, rankingAna[i].nome, rankingAna[i].pontuacao), 400, 150+(40*i), 40, MAGENTA);
                     }
                     
                     PlaySound(audioIra);
@@ -585,10 +564,8 @@ int main(void)
                 case ENDING:
                 {
                     // desenhar tela ENDING
-                    DrawRectangle(0, 0, screenWidth, screenHeight, BLUE);
-                    DrawText("ENDING SCREEN", 20, 20, 40, DARKBLUE);
-                    DrawText("PRESS ENTER or TAP to RETURN to TITLE SCREEN", 120, 220, 20, DARKBLUE);
-                    
+                    DrawTextureEx(backgroundEnding, (Vector2){ scrollingBackTitle, 0 }, 0.0f, 1.0f, WHITE);
+                    DrawTextureEx(backgroundEnding, (Vector2){ (backgroundTitle.width) + scrollingBackTitle, 0 }, 0.0f, 1.0f, WHITE);
                     
                     PlaySound(audioVaiDarNamoro);
                 } break;
@@ -625,6 +602,7 @@ int main(void)
         UnloadTexture(backgroundJogo);  // Unload background texture
     
         // unload tela ENDING
+        UnloadTexture(backgroundEnding);
     
     CloseAudioDevice();
     CloseWindow();        // Close window and OpenGL context

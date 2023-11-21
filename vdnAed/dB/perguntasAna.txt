@@ -1,5 +1,6 @@
 Escolha um time A) Nautico B) Santa Cruz
-Na hora de fofocar, você… A) Manda mensagem no Zap B) Faz uma ligação rápida
-No primeiro date, você levaria para um encontro…. A) No parque B) No café
-Na hora da paquera, você… A) Solta um elogio sincero B) Faz piada para quebrar o gelo
-Agora faça seu nome e lance uma cantada para conquistar… A) A vida não ta facil, mas eu to…. B) To com problema nos olhos… não consigo enxergar nos dois separados!
+Gato ou Cachorro? A) Gato B) Cachorro
+Manhã ou Noite? A) Manhã B) Noite
+Frio ou Calor? A) Frio B) Calor
+Cidade ou Campo? A) Cidade B) Campo
+Esporte ou Leitura? A) Esporte B) Leitura
